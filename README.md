@@ -6,15 +6,15 @@
 - The GoPro cameras used in the project record video in 4k. Due to lens distortion, perspectives and area of interest a full hd part of the image was choosen to be of largest interest. That means the lower half and the middle 2/4 of the image is used. There are still annotations covering the 4k part outside the full hd frame so annotations are automatically cropped if they cross the 4k to full hd boundary. In training we use full hd image.
 
 ### Weed_training
-- https://gitlab.linkoping-ri.se/daniella/weed_training.git
+- https://github.com/edl78/weed_training
 - Main PyTorch training repo for weed detection
 
 ### Weed_annotations
-- https://gitlab.linkoping-ri.se/daniella/weed_annotations.git
+- https://github.com/edl78/weed_annotations
 - Statistics and database. Has interface to cvat for fetching annotations and inserting them into the MongoDB. Also a mongoExpress web interface to MongoDB for easy access to the database.
 
 ### Analytics
-- https://gitlab.linkoping-ri.se/daniella/analytics.git
+- https://github.com/edl78/analytics
 - T-sne clustering of bboxes for each task. GPU accelerated via Rapids lib and accessed via an http-api made with flask.
 - The Rapids library is only available in conda if we do not like to build from source. This gives double virtualization since we also use Docker for every function/repo.
 - The Analytics conda part is notoriously hard to build due to packages being deprecated very fast. Expect to debug and work hard to get it to build. Build failure logs are also very hard to decrypt.
@@ -22,7 +22,7 @@
 
 
 ### dev_tips
-- https://gitlab.linkoping-ri.se/daniella/dev_tips.git
+- https://github.com/edl78/dev_tips
 - Short description of how we setup Docker container remote development with vscode. Very handy when in times of pandemics working from home with office servers.
 
 
