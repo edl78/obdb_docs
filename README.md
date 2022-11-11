@@ -36,15 +36,21 @@
 - git clone repos listed above.
 
 ### Building all Docker images
-- Build the Docker images by following the respective repos build instuctions.
+- Build the Docker images by following the respective repos build instuctions. This applies to weed_training and weed_annotations, analytics is optional, obdb_docs and dev_tips are just for documentation.
 
 ### Start services
 - How to start all services needed is covered in each repo.
 
-### Build and start CVAT
+### Clone and start CVAT
+- This applies if you like to inspect or add annotations. Not needed if the fast track to training is choosen.
 - Follow docs here: https://github.com/openvinotoolkit/cvat
-- Use a version with API 1.0 support. For example 1.7.0
-- We map a storge folder like this and expect the cvat root to be called /fielddata as this is assumed in the upload code to the http-api.
+- Use a version with API 1.0 support. For example 1.7.0: `git checkout v1.7.0`
+- Pull older versions of cvat_server and cvat_ui: `docker pull openvino/cvat_server:v1.7.0` and tag as latest `docker tag openvino/cvat_server:v1.7.0 openvino/cvat_server:latest`
+- same for ui: `docker pull openvino/cvat_ui:v1.7.0` and `docker tag openvino/cvat_ui:v1.7.0 openvino/cvat_ui:latest`
+- Setup user and password (not same as newer versions): `docker exec -it cvat bash -ic 'python3 ~/manage.py createsuperuser'`
+- In the cvat folder: `export CVAT_HOST=your-ip-address`
+- In env.list that is sent to the container, set this (as above replace with your ip address where cvat runs): CVAT_BASE_URL=http://your-ip-address:8080/api/v1/
+- We map a storge folder like this in the cvat docker-compose.yml and expect the cvat root to be called /fielddata as this is assumed in the upload code to the http-api.
 ```json
 services:
   cvat:
@@ -60,12 +66,14 @@ volumes:
 
 
 
-## Short vs long path
+## Fast-track to training vs complete setup
 
-### Short path to training
+### Fast-track to training
 - Build weed_annotations and run as per instructions in the repos. Build weed_training but do not run yet.
 - no need to setup cvat for this route.
 - load annotations into mongo with mongo interface. Install the MongoDB Database Tools by downloading from mongodb website and follow install instructions. Find the mongodb json files in the artefacts folder downloaded from the OBDB site. To import data into MongoDB use (fill in your username, password and port):
+- Known bugs in the bitnami/mongodb: must initialize with port 27017 and do not change root user name! Otherwise it will not work...
+- https://www.mongodb.com/try/download/database-tools
 - for the annotation data: `mongoimport --username= --password= --host=localhost --port= --collection=annotation_data --db=annotations annotation_data.json`
 - for the meta data: 
 `mongoimport --username= --password= --host=localhost --port= --collection=meta --db=annotations meta.json`
@@ -77,7 +85,7 @@ volumes:
 - start training as per instructions in the weed_training repo.
 - get metrics, see instructions in the weed_training repo.
 
-### Long path to training
+### Complete setup of training and possibility to annotate
 - set up all services including CVAT (analytics only for data insight, takes some time to run, in the order of days and we will supply pre calculated T-SNE graphs, so it can be skipped) 
 - upload tasks to cvat, validation pickle: `python3 auto_annotate.py --upload_pkl True -p /train/pickled_weed/pd_val.pkl`
 - and train pickle: `python3 auto_annotate.py --upload_pkl True -p /train/pickled_weed/pd_train.pkl`
