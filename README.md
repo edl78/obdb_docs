@@ -44,6 +44,7 @@
 ### Clone and start CVAT
 - This applies if you like to inspect or add annotations. Not needed if the fast track to training is choosen.
 - Follow docs here: https://github.com/openvinotoolkit/cvat
+- Clone the cvat repo: `git clone https://github.com/opencv/cvat.git`
 - Use a version with API 1.0 support. For example 1.7.0: `git checkout v1.7.0`
 - Pull older versions of cvat_server and cvat_ui: `docker pull openvino/cvat_server:v1.7.0` and tag as latest `docker tag openvino/cvat_server:v1.7.0 openvino/cvat_server:latest`
 - same for ui: `docker pull openvino/cvat_ui:v1.7.0` and `docker tag openvino/cvat_ui:v1.7.0 openvino/cvat_ui:latest`
