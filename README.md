@@ -48,9 +48,23 @@
 - Pull older versions of cvat_server and cvat_ui: `docker pull openvino/cvat_server:v1.7.0` and tag as latest `docker tag openvino/cvat_server:v1.7.0 openvino/cvat_server:latest`
 - same for ui: `docker pull openvino/cvat_ui:v1.7.0` and `docker tag openvino/cvat_ui:v1.7.0 openvino/cvat_ui:latest`
 - Setup user and password (not same as newer versions): `docker exec -it cvat bash -ic 'python3 ~/manage.py createsuperuser'`
+- set these versions in the cvat docker-compose.yml:
+```json
+cvat:
+    container_name: cvat
+    image: openvino/cvat_server:v1.7.0
+```
+```json
+cvat_ui:
+    container_name: cvat_ui
+    image: openvino/cvat_ui:v1.7.0
+``` 
 - In the cvat folder: `export CVAT_HOST=your-ip-address`
 - In env.list that is sent to the container, set this (as above replace with your ip address where cvat runs): CVAT_BASE_URL=http://your-ip-address:8080/api/v1/
-- We map a storge folder like this in the cvat docker-compose.yml and expect the cvat root to be called /fielddata as this is assumed in the upload code to the http-api.
+- We map a storge folder like this in the cvat docker-compose.yml and expect the cvat root to be called fielddata as this is assumed in the upload code to the http-api.
+- If a newer CVAT has been used this might be needed: docker-compose down -v in the cvat folder. It will remove the volumes associated with cvat, so beware. Make sure to back up your annotations before.
+- put the images in a folder named fielddata and map the parent foler as the shared folder. Then paths will be correct to published annotations as these originate from the fielddata folder.
+
 ```json
 services:
   cvat:
@@ -87,7 +101,7 @@ volumes:
 
 ### Complete setup of training and possibility to annotate
 - set up all services including CVAT (analytics only for data insight, takes some time to run, in the order of days and we will supply pre calculated T-SNE graphs, so it can be skipped) 
-- upload tasks to cvat, validation pickle: `python3 auto_annotate.py --upload_pkl True -p /train/pickled_weed/pd_val.pkl`
+- upload tasks to cvat code found in the weed_training repo under code, validation pickle: `python3 auto_annotate.py --upload_pkl True -p /train/pickled_weed/pd_val.pkl`
 - and train pickle: `python3 auto_annotate.py --upload_pkl True -p /train/pickled_weed/pd_train.pkl`
 - fetch all annotations via dashboard to mongodb: press update database button in the dashboard running on localhost:8050
 - start training `python3 torch_model_runner.py`
