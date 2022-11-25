@@ -46,13 +46,35 @@ Then follows directories `1L`, `1R`, `2L`, `2R`, `3L`, and  `3R`. These are a nu
 
 Lastly in the directory structure, the name of the GoPro video file follows, e.g. `GH070066` and `GH010049`.
 
-For each video file captured by the GoPro we used [ffmpeg]() to extract key frames in sequence. The naming of the images is just a sequence of numbers for the key frames.
+For each video file captured by the GoPro we used [ffmpeg](https://ffmpeg.org/) to extract key frames in sequence. The naming of the images is just a sequence of numbers for the key frames.
 
 ### Extraction of frames from video
 
 Keyframes were extracted from the video files using the following call to ffmpeg:
 
-`YYYYYYYYYYYYYYYYYYY`
+`ffmpeg -skip_frame nokey -vsync 0 -i <videofile>.MP4 -r 30 -y -an -f image2 'iframes/<videofile>frame%04d.png'`
+
+At some dates video was captured with 30 FPS and for later dates 25 FPS was used instead. This requires changing the above to use `-r 25`.
+
+#### ffmpeg version used
+Installed via apt on Ubuntu 18.04, `apt list --installed` gives:
+`ffmpeg/now 7:3.4.6-0ubuntu0.18.04.1 amd64`.
+
+Running:
+`ffmpeg -version` results in this output:
+
+`ffmpeg version 3.4.6-0ubuntu0.18.04.1 Copyright (c) 2000-2019 the FFmpeg developers
+built with gcc 7 (Ubuntu 7.3.0-16ubuntu3)
+configuration: --prefix=/usr --extra-version=0ubuntu0.18.04.1 --toolchain=hardened --libdir=/usr/lib/x86_64-linux-gnu --incdir=/usr/include/x86_64-linux-gnu --enable-gpl --disable-stripping --enable-avresample --enable-avisynth --enable-gnutls --enable-ladspa --enable-libass --enable-libbluray --enable-libbs2b --enable-libcaca --enable-libcdio --enable-libflite --enable-libfontconfig --enable-libfreetype --enable-libfribidi --enable-libgme --enable-libgsm --enable-libmp3lame --enable-libmysofa --enable-libopenjpeg --enable-libopenmpt --enable-libopus --enable-libpulse --enable-librubberband --enable-librsvg --enable-libshine --enable-libsnappy --enable-libsoxr --enable-libspeex --enable-libssh --enable-libtheora --enable-libtwolame --enable-libvorbis --enable-libvpx --enable-libwavpack --enable-libwebp --enable-libx265 --enable-libxml2 --enable-libxvid --enable-libzmq --enable-libzvbi --enable-omx --enable-openal --enable-opengl --enable-sdl2 --enable-libdc1394 --enable-libdrm --enable-libiec61883 --enable-chromaprint --enable-frei0r --enable-libopencv --enable-libx264 --enable-shared
+libavutil      55. 78.100 / 55. 78.100
+libavcodec     57.107.100 / 57.107.100
+libavformat    57. 83.100 / 57. 83.100
+libavdevice    57. 10.100 / 57. 10.100
+libavfilter     6.107.100 /  6.107.100
+libavresample   3.  7.  0 /  3.  7.  0
+libswscale      4.  8.100 /  4.  8.100
+libswresample   2.  9.100 /  2.  9.100
+libpostproc    54.  7.100 / 54.  7.100`
 
 
 ## Notes on CVAT
