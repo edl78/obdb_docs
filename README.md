@@ -90,20 +90,49 @@ volumes:
       o: bind
 ```
 
-- *We map a storge folder like this in the cvat docker-compose.yml and expect the cvat root to be called fielddata as this is assumed in the upload code to the http-api.*
-**Vad betyder detta? Använder vi en annan mappad katalog för att lagra data?? (den ovan är ju read-only)**
-
-- In the cvat folder run: `export CVAT_HOST=<your-ip-address>` (you should maybe set this permanently depending on your use case)
+- In the cvat folder run: `export ` (you should maybe set this permanently depending on your use case)
 - In `env.list` that is sent to the container, set this (as above replace with your IP address where CVAT runs): `CVAT_BASE_URL=http://<your-ip-address>:8080/api/v1/`
-
+- Create a `.env` file in the directory where your `docker-compose.yml` is located, open it and add this line:
+`CVAT_HOST=<your-ip-address>`
+inserting your machines IP number instead of `<your-ip-address>`.
 - Bring up CVAT by running `docker-compose up -d` (skip -d first time to easily see all output to chech everything is in order).
-
-- Create CVAT superuser and set password (not same as newer versions): `docker exec -it cvat bash -ic 'python3 ~/manage.py createsuperuser'`
-
-- Use a browser to visit you CVAT installation on your machine through its IP.
+- Create CVAT superuser and set password (not same as newer versions):
+`docker exec -it cvat bash -ic 'python3 ~/manage.py createsuperuser'`
+set administrator name (e.g. admin), mail address and password.
+- If you now try to login, CVAT will not allow you to do so for some reason. Bring down CVAT by pressing Ctrl+C in your terminal (if you ran without the -d) or run `docker-compose down`. Then start it all again, `docker-compose up -d`, and everything should be OK.
+- Use a browser to visit you CVAT installation on your machine through its IP and login as the administrator user you created and you are off to the races!
 
 ### Additional info
-- More detailed documenation here: https://github.com/openvinotoolkit/cvat - Just remember to choose the correct version tag so you read the documentation for you choosen version instead of the latest development info.
+- More detailed documenation here: https://github.com/openvinotoolkit/cvat - Just remember to choose the correct version tag at github.com to ensure that you read the documentation for your choosen version instead of for the latest development version.
+
+- During our project we ran CVAT in a virtual machine with a quite small harddrive. Since CVAT stores a lot of internal information ("thumbnails" of images etc) it might make sense to map some additional storge folders from the container out onto a secondary disk (our was a NFS mount of a file server export). To do this, modify `docker-compose.yml` according to this:
+```json
+services:
+  cvat_db:
+...
+    volumes:
+      - /fs/cvatdata/db:/var/lib/postgresql/data
+...
+  cvat:
+...
+    volumes:
+      - /fs/cvatdata/data:/home/django/data
+      - /fs/cvatdata/keys:/home/django/keys
+      - /fs/cvatdata/logs:/home/django/logs
+      - /fs/cvatdata/models:/home/django/models
+...
+volumes:
+#  cvat_db:
+#  cvat_data:
+#  cvat_keys:
+#  cvat_logs:
+```
+where `...` means skip to next relevant section. In this example `/fs/cvatdata` was our mount point for the additional harddrive / NFS mount. Then create directories under your mount point, e.g. `/fs/cvatdata` by:
+`cd /your/folder/
+mkdir data db keys logs models
+chown <username>:<usergroup> data db keys logs models`
+for the user which will start docker.
+
 - Keep in mind that if you ave already used a newer CVAT version this might be needed: `docker-compose down -v` in the cvat folder. **It will remove the volumes associated with cvat, so beware.** Make sure to back up your annotations before.
 
 ## Workflow
@@ -159,3 +188,4 @@ This is, as mentiond above, only needed if you like to inspect, modify or add an
 
 ### Just want to play?
 - use the pretrained resnet18.pth with supplied class_map so you know what class predictions mean and implement an inference solution of your choice.
+
