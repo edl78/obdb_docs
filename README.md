@@ -46,13 +46,35 @@ Then follows directories `1L`, `1R`, `2L`, `2R`, `3L`, and  `3R`. These are a nu
 
 Lastly in the directory structure, the name of the GoPro video file follows, e.g. `GH070066` and `GH010049`.
 
-For each video file captured by the GoPro we used [ffmpeg]() to extract key frames in sequence. The naming of the images is just a sequence of numbers for the key frames.
+For each video file captured by the GoPro we used [ffmpeg](https://ffmpeg.org/) to extract key frames in sequence. The naming of the images is just a sequence of numbers for the key frames.
 
 ### Extraction of frames from video
 
 Keyframes were extracted from the video files using the following call to ffmpeg:
 
-`YYYYYYYYYYYYYYYYYYY`
+`ffmpeg -skip_frame nokey -vsync 0 -i <videofile>.MP4 -r 30 -y -an -f image2 'iframes/<videofile>frame%04d.png'`
+
+At some dates video was captured with 30 FPS and for later dates 25 FPS was used instead. This requires changing the above to use `-r 25`.
+
+#### ffmpeg version used
+Installed via apt on Ubuntu 18.04, `apt list --installed` gives:
+`ffmpeg/now 7:3.4.6-0ubuntu0.18.04.1 amd64`.
+
+Running:
+`ffmpeg -version` results in this output:
+
+`ffmpeg version 3.4.6-0ubuntu0.18.04.1 Copyright (c) 2000-2019 the FFmpeg developers
+built with gcc 7 (Ubuntu 7.3.0-16ubuntu3)
+configuration: --prefix=/usr --extra-version=0ubuntu0.18.04.1 --toolchain=hardened --libdir=/usr/lib/x86_64-linux-gnu --incdir=/usr/include/x86_64-linux-gnu --enable-gpl --disable-stripping --enable-avresample --enable-avisynth --enable-gnutls --enable-ladspa --enable-libass --enable-libbluray --enable-libbs2b --enable-libcaca --enable-libcdio --enable-libflite --enable-libfontconfig --enable-libfreetype --enable-libfribidi --enable-libgme --enable-libgsm --enable-libmp3lame --enable-libmysofa --enable-libopenjpeg --enable-libopenmpt --enable-libopus --enable-libpulse --enable-librubberband --enable-librsvg --enable-libshine --enable-libsnappy --enable-libsoxr --enable-libspeex --enable-libssh --enable-libtheora --enable-libtwolame --enable-libvorbis --enable-libvpx --enable-libwavpack --enable-libwebp --enable-libx265 --enable-libxml2 --enable-libxvid --enable-libzmq --enable-libzvbi --enable-omx --enable-openal --enable-opengl --enable-sdl2 --enable-libdc1394 --enable-libdrm --enable-libiec61883 --enable-chromaprint --enable-frei0r --enable-libopencv --enable-libx264 --enable-shared
+libavutil      55. 78.100 / 55. 78.100
+libavcodec     57.107.100 / 57.107.100
+libavformat    57. 83.100 / 57. 83.100
+libavdevice    57. 10.100 / 57. 10.100
+libavfilter     6.107.100 /  6.107.100
+libavresample   3.  7.  0 /  3.  7.  0
+libswscale      4.  8.100 /  4.  8.100
+libswresample   2.  9.100 /  2.  9.100
+libpostproc    54.  7.100 / 54.  7.100`
 
 
 ## Notes on CVAT
@@ -90,20 +112,49 @@ volumes:
       o: bind
 ```
 
-- *We map a storge folder like this in the cvat docker-compose.yml and expect the cvat root to be called fielddata as this is assumed in the upload code to the http-api.*
-**Vad betyder detta? Använder vi en annan mappad katalog för att lagra data?? (den ovan är ju read-only)**
-
-- In the cvat folder run: `export CVAT_HOST=<your-ip-address>` (you should maybe set this permanently depending on your use case)
+- In the cvat folder run: `export ` (you should maybe set this permanently depending on your use case)
 - In `env.list` that is sent to the container, set this (as above replace with your IP address where CVAT runs): `CVAT_BASE_URL=http://<your-ip-address>:8080/api/v1/`
-
+- Create a `.env` file in the directory where your `docker-compose.yml` is located, open it and add this line:
+`CVAT_HOST=<your-ip-address>`
+inserting your machines IP number instead of `<your-ip-address>`.
 - Bring up CVAT by running `docker-compose up -d` (skip -d first time to easily see all output to chech everything is in order).
-
-- Create CVAT superuser and set password (not same as newer versions): `docker exec -it cvat bash -ic 'python3 ~/manage.py createsuperuser'`
-
-- Use a browser to visit you CVAT installation on your machine through its IP.
+- Create CVAT superuser and set password (not same as newer versions):
+`docker exec -it cvat bash -ic 'python3 ~/manage.py createsuperuser'`
+set administrator name (e.g. admin), mail address and password.
+- If you now try to login, CVAT will not allow you to do so for some reason. Bring down CVAT by pressing Ctrl+C in your terminal (if you ran without the -d) or run `docker-compose down`. Then start it all again, `docker-compose up -d`, and everything should be OK.
+- Use a browser to visit you CVAT installation on your machine through its IP and login as the administrator user you created and you are off to the races!
 
 ### Additional info
-- More detailed documenation here: https://github.com/openvinotoolkit/cvat - Just remember to choose the correct version tag so you read the documentation for you choosen version instead of the latest development info.
+- More detailed documenation here: https://github.com/openvinotoolkit/cvat - Just remember to choose the correct version tag at github.com to ensure that you read the documentation for your choosen version instead of for the latest development version.
+
+- During our project we ran CVAT in a virtual machine with a quite small harddrive. Since CVAT stores a lot of internal information ("thumbnails" of images etc) it might make sense to map some additional storge folders from the container out onto a secondary disk (our was a NFS mount of a file server export). To do this, modify `docker-compose.yml` according to this:
+```json
+services:
+  cvat_db:
+...
+    volumes:
+      - /fs/cvatdata/db:/var/lib/postgresql/data
+...
+  cvat:
+...
+    volumes:
+      - /fs/cvatdata/data:/home/django/data
+      - /fs/cvatdata/keys:/home/django/keys
+      - /fs/cvatdata/logs:/home/django/logs
+      - /fs/cvatdata/models:/home/django/models
+...
+volumes:
+#  cvat_db:
+#  cvat_data:
+#  cvat_keys:
+#  cvat_logs:
+```
+where `...` means skip to next relevant section. In this example `/fs/cvatdata` was our mount point for the additional harddrive / NFS mount. Then create directories under your mount point, e.g. `/fs/cvatdata` by:
+`cd /your/folder/
+mkdir data db keys logs models
+chown <username>:<usergroup> data db keys logs models`
+for the user which will start docker.
+
 - Keep in mind that if you ave already used a newer CVAT version this might be needed: `docker-compose down -v` in the cvat folder. **It will remove the volumes associated with cvat, so beware.** Make sure to back up your annotations before.
 
 ## Workflow
