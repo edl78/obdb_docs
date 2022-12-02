@@ -8,10 +8,10 @@ There are 4 github repos that belong to the project (and this repo just for some
 Short internal description of how we used to setup Docker container remote development with VScode during the pandemic. Very handy in times of working from home to office servers. Repo with description [here](https://github.com/edl78/dev_tips).
 
 ### Weed_training
-The [weed_training](https://github.com/edl78/weed_training) repo contians PyTorch code for training a network to do weed detection.
+The [weed_training](https://github.com/edl78/weed_training) repo contians PyTorch code for training a network to do weed detection. Includes Bayesian hyperparameter optimization.
 
 ### Weed_annotations
-The [weed_annotations](https://github.com/edl78/weed_annotations) repo contains code which sets up a new pipeline for do iterative semi-automatic annotations. It was developed to communicate with [CVAT](https://github.com/opencv/cvat) through the API. This work was done during the API 1.0 time period of CVAT, i.e. CVAT version up to 1.7.0, and is the reason why you will need to use an old version of CVAT (see further instructions).  Of course you could always update the code to support CVAT API 2.0 and if you do please consider sharing your updates back to us!
+The [weed_annotations](https://github.com/edl78/weed_annotations) repo contains code which sets up a new pipeline for doing iterative semi-automatic annotations. It was developed to communicate with [CVAT](https://github.com/opencv/cvat) through the API. This work was done during the API 1.0 time period of CVAT, i.e. CVAT version up to 1.7.0, and is the reason why you will need to use an old version of CVAT (see further instructions).  Of course you could always update the code to support CVAT API 2.0 and if you do please consider sharing your updates back to us!
 
 Has interface to cvat for fetching annotations and inserting them into a MongoDB external from CVAT. Also a mongoExpress web interface to MongoDB for easy access to this database.
 
@@ -108,9 +108,8 @@ volumes:
 
 ## Workflow
 
-### Getting the data
-- Add script to download data with wget...
-- Artefacts folder contains a pretrained resnet18 Pytorch model and json files to import to MongoDB for the short path to training. Json files are meta.json, tasks.json and annotation_data.json.
+### Getting the non image data
+- Artefacts folder contains a pretrained resnet18 Pytorch model and json files to import to MongoDB for the short path to training. Json files are meta.json, tasks.json and annotation_data.json. Pickle files for fast track to training are also supplied.
 
 ### Getting the code
 - git clone repos listed above.
@@ -119,43 +118,42 @@ volumes:
 - Build the Docker images by following the respective repos build instuctions. This applies to weed_training and weed_annotations, analytics is optional, obdb_docs and dev_tips are just for documentation.
 
 ### Start services
-- How to start all services needed is covered in each repo.
+- How to start all services needed is covered in each repo. If fast track is chosen one weed_training is needed. If complete setup is prefered start Analytics (optional), weed_annotations and last weed_training. Analytics is not bundled with weed_annotations as it needs a GPU with at least 15GB of memory for the T-sne analysis. Weed_annotations need quite a lot of CPU RAM to hold all dashboard data from the statistics and analytics, therefore they do not share docker-compose. If running on a more capable server feel free to put them in the same docker-compose. Then weed_annotations depends on analytics.
 
 ### Clone and start CVAT
 
 This is, as mentiond above, only needed if you like to inspect, modify or add annotations to the dataset. CVAT is not needed if you will follow the fast track to training below.
+- Upload tasks to cvat code found in the weed_training repo under code. `docker-compose -f docker-compose-upload-train-data-cvat.yml up` and `docker-compose -f docker-compose-upload-val-data-cvat.yml up`
+
 
 ## Fast-track to training vs complete setup
 
 ### Fast-track to training
-- Build weed_annotations and run as per instructions in the repos. Build weed_training but do not run yet.
-- no need to setup cvat for this route.
-- load annotations into mongo with mongo interface. Install the MongoDB Database Tools by downloading from mongodb website and follow install instructions. Find the mongodb json files in the artefacts folder downloaded from the OBDB site. To import data into MongoDB use (fill in your username, password and port):
-- Known bugs in the bitnami/mongodb: must initialize with port 27017 and do not change root user name! Otherwise it will not work...
-- https://www.mongodb.com/try/download/database-tools
-- for the annotation data: `mongoimport --username= --password= --host=localhost --port= --collection=annotation_data --db=annotations annotation_data.json`
-- for the meta data:
-`mongoimport --username= --password= --host=localhost --port= --collection=meta --db=annotations meta.json`
-- for the tasks data:
-`mongoimport --username= --password= --host=localhost --port= --collection=tasks --db=annotations tasks.json`
-
 - use premade pd_train.pkl and pd_val.pkl
 - do not care about about the analytics service
 - start training as per instructions in the weed_training repo.
 - get metrics, see instructions in the weed_training repo.
 
 ### Complete setup of training and possibility to annotate
-- set up all services including CVAT (analytics only for data insight, takes some time to run, in the order of days and we will supply pre calculated T-SNE graphs, so it can be skipped)
-- upload tasks to cvat code found in the weed_training repo under code, validation pickle: `python3 auto_annotate.py --upload_pkl True -p /train/pickled_weed/pd_val.pkl`
-- and train pickle: `python3 auto_annotate.py --upload_pkl True -p /train/pickled_weed/pd_train.pkl`
-- fetch all annotations via dashboard to mongodb: press update database button in the dashboard running on localhost:8050
-- start training `python3 torch_model_runner.py`
-- get metrics `python3 test_model.py`
+- Build weed_annotations and run as per instructions in the repos. Build weed_training but do not run yet.
+- There are two ways to load annotations into MongoDB.
+- Alternative 1: Load annotations into mongo with mongo interface. Install the MongoDB Database Tools by downloading from mongodb website and follow install instructions. Find the mongodb json files in the artefacts folder downloaded from the OBDB site. To import data into MongoDB use (fill in your username, password and port):
+- Known bugs in the bitnami/mongodb: must initialize with port 27017 and do not change root user name! Otherwise it will not work...
+- https://www.mongodb.com/try/download/database-tools
+- For the annotation data: `mongoimport --username= --password= --host=localhost --port= --collection=annotation_data --db=annotations annotation_data.json`
+- For the meta data:
+`mongoimport --username= --password= --host=localhost --port= --collection=meta --db=annotations meta.json`
+- For the tasks data:
+`mongoimport --username= --password= --host=localhost --port= --collection=tasks --db=annotations tasks.json`
+- Alternative 2: - Fetch all annotations via dashboard (available after starting weed_annotations) to MongoDB: press update annotations button in the dashboard running on localhost:8050
+- MongoDB contents can be viewed via localhost:8081, on the MongoExpress GUI.
+- Start training and get metrics are covered in the weed_training repo.
+- Auto annotation is available in the weed_training repo to speed up annotations. Find more info in the weed_training repo.
 
 
 ### Finding new optimal hyperparameters
-- This requires manual hacking for now.
-- In the weed_training repo under code/weed_data_class_od.py, hardcode the return value of `def __len__(self)` to a small value and a multiple of the batch size, for example 4. Run the overfit version of the training, model_trainer_overfit.py by commenting in the import in torch_model_runner.py then run an extensive search with Sherpa by setting the `"run_hpo": 1` to 1 in the json config settings_file_gt_train_val.json. Watch the Sherpa dashbord at localhost:8880 and see the Bayesian optimization at work. The optimal parameters will be saved in /train/resnet18_settings.json if resnet18 was chosen as model. These settings can then be transfered to the config file manually or you can point to it in the torch_model_runner.py training code like this: `trainer.train_model(settings_file='/train/resnet18_settings.json')`
+- The HPO search is covered in the weed_training repo, but is controlled via the settings file.
 
 ### Just want to play?
-- use the pretrained resnet18.pth with supplied class_map so you know what class predictions mean and implement an inference solution of your choice.
+- Use the pretrained resnet18.pth with supplied class_map so you know what class predictions mean and implement an inference solution of your choice.
+- Use the same normalization as the dataloader during training, image resolution is expected to be 1920x1080 in png format.
