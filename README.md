@@ -169,7 +169,7 @@ for the user which will start docker.
 - Build the Docker images by following the respective repos build instuctions. This applies to weed_training and weed_annotations, analytics is optional, obdb_docs and dev_tips are just for documentation.
 
 ### Start services
-- How to start all services needed is covered in each repo. If fast track is chosen one weed_training is needed. If complete setup is prefered start Analytics (optional), weed_annotations and last weed_training. Analytics is not bundled with weed_annotations as it needs a GPU with at least 15GB of memory for the T-sne analysis. Weed_annotations need quite a lot of CPU RAM to hold all dashboard data from the statistics and analytics, therefore they do not share docker-compose. If running on a more capable server feel free to put them in the same docker-compose. Then weed_annotations depends on analytics.
+- How to start all services needed is covered in each repo. If fast track is chosen only weed_training is needed. If complete setup is prefered start Analytics (optional), weed_annotations and last weed_training. Analytics is not bundled with weed_annotations as it needs a GPU with at least 16GB of memory for the T-sne analysis. Weed_annotations need quite a lot of CPU RAM to hold all dashboard data from the statistics and analytics, therefore they do not share docker-compose. If running on a more capable server feel free to put them in the same docker-compose. Then weed_annotations depends on analytics.
 
 ### Clone and start CVAT
 
@@ -180,7 +180,7 @@ This is, as mentiond above, only needed if you like to inspect, modify or add an
 ## Fast-track to training vs complete setup
 
 ### Fast-track to training
-- use premade pd_train.pkl and pd_val.pkl
+- use premade pd_train_full_hd.pkl and pd_val_full_hd.pkl
 - do not care about about the analytics service
 - start training as per instructions in the weed_training repo.
 - get metrics, see instructions in the weed_training repo.
