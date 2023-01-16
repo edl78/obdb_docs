@@ -8,24 +8,35 @@ There are 4 github repos that belong to the project (and this repo just for some
 Short internal description of how we used to setup Docker container remote development with VScode during the pandemic. Very handy in times of working from home to office servers. Repo with description [here](https://github.com/edl78/dev_tips).
 
 ### weed_training
-The [weed_training](https://github.com/edl78/weed_training) repo contians PyTorch code for training a network to do weed detection. Includes Bayesian hyperparameter optimization.
+The [weed_training](https://github.com/edl78/weed_training) repo contians:
+- Code to download data (images, annotations etc)
+- PyTorch code for training a network to do weed detection. This is done using Bayesian hyperparameter optimization and by reading annoations from Pickle files.
+- Code to cut your full dataset into new train and validation splits. Split is defined from npy-files in the artifacts sub directory and Pickle files are created from these using annotations stored in a MongoDB.
+- Code to download annotations from CVAT to a MongoDB using the API of CVAT.
+- Code to upload annoations from Pickle-files.
+- A pipeline for doing iterative semi-automatic annotations by using CVAT in combination with the code mentioned above. This works by code setting up new tasks in CVAT and then injecting/uploading new detections as proposed annotations in the new CVAT tasks. This should then be verified by users before accepted.
+- A pipeline for completing the annotation in images by comparing existing CVAT annotations with detections from inference by IoU and setting up new CVAT tasks with only the missing annotations. This should then be verified by users before accepted.
+- Code to get metrics after your training is complete.
+
+This code was developed to communicate with [CVAT](https://github.com/opencv/cvat) through the API. This work was done during the API 1.0 time period of CVAT, i.e. CVAT version up to 1.7.0, and is the reason why you will need to use an old version of CVAT (see further instructions). Of course you could always update the code to support CVAT API 2.0 and if you do please consider sharing your updates back to us!
+
 
 ### weed_annotations
-The [weed_annotations](https://github.com/edl78/weed_annotations) repo contains code which sets up a new pipeline for doing iterative semi-automatic annotations. It was developed to communicate with [CVAT](https://github.com/opencv/cvat) through the API. This work was done during the API 1.0 time period of CVAT, i.e. CVAT version up to 1.7.0, and is the reason why you will need to use an old version of CVAT (see further instructions).  Of course you could always update the code to support CVAT API 2.0 and if you do please consider sharing your updates back to us!
+The [weed_annotations](https://github.com/edl78/weed_annotations) repo contains a dash-board to get insights on the data. Can start calculations in the analytics service to do t-SNE on the data. Also contains code for calculating statistics.
 
 Has interface to cvat for fetching annotations and inserting them into a MongoDB external from CVAT. Also a mongoExpress web interface to MongoDB for easy access to this database.
 
-### analytics
-The [analytics](https://github.com/edl78/analytics) repo contains a few helper functions we used during the project to study our data:
-- T-sne clustering of bboxes for each task. GPU accelerated via Rapids lib installed via pip and accessed via an http-api made with flask.
+When updating annotations or tasks in CVAT it is needed to use the dash-board to update annotations in the MongoDB by pressing the button "update annotations", otherwise changes in CVAT will not propagate to the rest of the code in any of the repos. Second, to make use of annotations in new images or if the split is changed, contents in the npy-files need to be updated. *This should be made a lot easier for the user by migrating to using text files instead of npy-files (TBD, please supply update to us!)*. 
 
-Please note that older versions of the code uses conda and for these version the following notes apply:
+### analytics
+The [analytics](https://github.com/edl78/analytics) repo contains a few helper functions we used during the project to study our data and its feature distributions:
+- t-SNE clustering of bboxes for each task. GPU accelerated via Rapids lib installed via pip and accessed via an http-API made with Flask.
+
+Please note that older versions of the analytics code uses conda and for these version the following notes apply:
 - The Rapids library is only available in conda if we do not like to build from source. This gives double virtualization since we also use Docker for every function/repo.
 - The Analytics conda part is notoriously hard to build due to packages being deprecated very fast. Expect to debug and work hard to get it to build. Build failure logs are also very hard to decrypt.
 
-## Workflow
-
-There are two workflows described here, the *fast track to training* and the *complete setup* which includes analytics, annotation framework (CVAT + our own code to interface with CVAT) etc. Common steps for the two workflows are getting code and data, building containers and setting up any services.
+## Overview on how-to
 
 ### Getting the code
 - git clone repos listed above.
@@ -33,18 +44,17 @@ There are two workflows described here, the *fast track to training* and the *co
 ### Getting the data
 Use the docker-compose files in the cloned code to get images, annotations, auxillary data (pathnames etc), calibration data and pre-trained models, see `readme.md` in [weed_training](https://github.com/edl78/weed_training)
 - First decide where to store the images (will use 2 times 670GB for 4K images, 2 times 115GB for full-HD images), edit the `.env`-file and set the variable `WEED_DATA_PATH` to where **on the host machine** you decided to store the images. This will be mapped to `/weed_data` inside the container. Images will be downloaded and exracted into a sub-directory called `fielddata`.
-- Annotations are stored in Pickle-files. To download the annotations 
-- Please put 
+- Next, the `artefacts` folder needs to be downloaded. It will be stored in the sub-directory `fielddata/artefacts` in the folder defined by `WEED_DATA_PATH`, as set in the `.env`-file. The artefacts folder contains a pretrained resnet18 Pytorch model and json files to import to MongoDB for the short path to training. Json files are meta.json, tasks.json and annotation_data.json. Pickle files for fast track to training are also supplied.
+- There is also some optional data with partial segmentation masks for a few hundred images, see repo for details.
 - Calibration data **TBD**
-- Artefacts folder contains a pretrained resnet18 Pytorch model and json files to import to MongoDB for the short path to training. Json files are meta.json, tasks.json and annotation_data.json. Pickle files for fast track to training are also supplied.
-
+- tSNE plots **TBD**
 
 
 ### Building all Docker images
 - Build the Docker images by following the respective repos build instuctions. This applies to [weed_training](https://github.com/edl78/weed_training) and [weed_annotations](https://github.com/edl78/weed_annotations),  however [analytics](https://github.com/edl78/analytics) is optional, and obdb_docs (this repository) as well as [dev_tips](https://github.com/edl78/dev_tips) are just for documentation.
 
 ### Start services
-- How to start all services needed is covered in each repo. If fast track is chosen only weed_training is needed. If complete setup is prefered start Analytics (optional), weed_annotations and last weed_training. Analytics is not bundled with weed_annotations as it needs a GPU with at least 16GB of memory for the T-sne analysis. Weed_annotations need quite a lot of CPU RAM to hold all dashboard data from the statistics and analytics, therefore they do not share docker-compose. If running on a more capable server feel free to put them in the same docker-compose. Then weed_annotations depends on analytics.
+- How to start all services needed is covered in each repo. If fast track is chosen only weed_training is needed. If complete setup is prefered start services in `analytics` (optional), then in `weed_annotations` and lastly in `weed_training`. Services in `analytics` is not bundled with `weed_annotations` as it needs a GPU with at least 16GB of memory for the t-SNE analysis. Services in `weed_annotations` need quite a lot of CPU RAM to hold all dashboard data from the statistics, therefore they do not share docker-compose. If running on a more capable server feel free to put them in the same docker-compose. In such a case `weed_annotations` will depend on `analytics`.
 
 ### Clone and start CVAT
 
@@ -52,38 +62,28 @@ This is, as mentiond above, only needed if you like to inspect, modify or add an
 - Upload tasks to cvat code found in the weed_training repo under code. `docker-compose -f docker-compose-upload-train-data-cvat.yml up` and `docker-compose -f docker-compose-upload-val-data-cvat.yml up`
 
 
-## Fast-track to training vs complete setup
+## Workflows - Fast-track to training vs complete setup
+
+There are two workflows described here, the *fast track to training* and the *complete setup* which includes analytics, annotation framework (CVAT + our own code to interface with CVAT) etc. Common steps for the two workflows are getting code and data, building containers and setting up any services.
 
 ### Fast-track to training
 - Use premade Pickle-files `pd_train_full_hd.pkl` and `pd_val_full_hd.pkl`
 - No need to setup the analytics service
-- start training as per instructions in the weed_training repo.
-- get metrics, see instructions in the weed_training repo.
+- Start training as per instructions in the weed_training repo.
+- To get metrics on your results, see instructions in the weed_training repo.
+- The HPO search is covered in the weed_training repo, but is controlled via the settings file.
 
 ### Complete setup of training and possibility to annotate
 - Build weed_annotations and run as per instructions in the repos. Build weed_training but do not run yet.
-- There are two ways to load annotations into MongoDB.
-- Alternative 1: Load annotations into mongo with mongo interface. Install the MongoDB Database Tools by downloading from mongodb website and follow install instructions. Find the mongodb json files in the artefacts folder downloaded from the OBDB site. To import data into MongoDB use (fill in your username, password and port):
-- Known bugs in the bitnami/mongodb: must initialize with port 27017 and do not change root user name! Otherwise it will not work...
-- https://www.mongodb.com/try/download/database-tools
-- For the annotation data: `mongoimport --username= --password= --host=localhost --port= --collection=annotation_data --db=annotations annotation_data.json`
-- For the meta data:
-`mongoimport --username= --password= --host=localhost --port= --collection=meta --db=annotations meta.json`
-- For the tasks data:
-`mongoimport --username= --password= --host=localhost --port= --collection=tasks --db=annotations tasks.json`
-- Alternative 2: - Fetch all annotations via dashboard (available after starting weed_annotations) to MongoDB: press update annotations button in the dashboard running on localhost:8050
-- MongoDB contents can be viewed via localhost:8081, on the MongoExpress GUI.
+- Load data into MongoDB.
 - Start training and get metrics are covered in the weed_training repo.
+- Setup and start CVAT. Upload training and validation tasks with annotations to CVAT.
 - Auto annotation is available in the weed_training repo to speed up annotations. Find more info in the weed_training repo.
+- Annotate more data in CVAT and push back to the training. Run inference on more images, push the results back to CVAT, validate new results and push back to training. Rinse. Repeat.
 
-
-### Finding new optimal hyperparameters
-- The HPO search is covered in the weed_training repo, but is controlled via the settings file.
-
-### Just want to play?
+### Just want to run inference?
 - Use the pretrained resnet18.pth with supplied class_map so you know what class predictions mean and implement an inference solution of your choice.
 - Use the same normalization as the dataloader during training, image resolution is expected to be 1920x1080 in png format.
-
 
 ## Notes on the data
 
