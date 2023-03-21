@@ -42,7 +42,7 @@ Please note that older versions of the analytics code uses conda and for these v
 - git clone repos listed above.
 
 ### Getting the data
-Use the docker-compose files in the cloned code to get images, annotations, auxillary data (pathnames etc), calibration data and pre-trained models, see `readme.md` in [weed_training](https://github.com/edl78/weed_training)
+Use the docker-compose-download files in the cloned code to get images, annotations, auxillary data (pathnames etc), calibration data, tSNE data and pre-trained models, see `readme.md` in [weed_training](https://github.com/edl78/weed_training)
 - First decide where to store the images (will use 2 times 670GB for 4K images, 2 times 115GB for full-HD images), edit the `.env`-file and set the variable `WEED_DATA_PATH` to where **on the host machine** you decided to store the images. This will be mapped to `/weed_data` inside the container. Images will be downloaded and exracted into a sub-directory called `fielddata`.
 - Next, the `artefacts` folder needs to be downloaded. It will be stored in the sub-directory `fielddata/artefacts` in the folder defined by `WEED_DATA_PATH`, as set in the `.env`-file. The artefacts folder contains a pretrained resnet18 Pytorch model and json files to import to MongoDB for the short path to training. Json files are meta.json, tasks.json and annotation_data.json. Pickle files for fast track to training are also supplied.
 - There is also some optional data with partial segmentation masks for a few hundred images, see repo for details.
