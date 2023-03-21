@@ -24,9 +24,9 @@ This code was developed to communicate with [CVAT](https://github.com/opencv/cva
 ### weed_annotations
 The [weed_annotations](https://github.com/edl78/weed_annotations) repo contains a dash-board to get insights on the data. Can start calculations in the analytics service to do t-SNE on the data. Also contains code for calculating statistics.
 
-Has interface to cvat for fetching annotations and inserting them into a MongoDB external from CVAT. Also a mongoExpress web interface to MongoDB for easy access to this database.
+This code has interface to CVAT for fetching annotations and inserting them into a MongoDB external from CVAT. Also a mongoExpress web interface to MongoDB for easy access to this database.
 
-When updating annotations or tasks in CVAT it is needed to use the dash-board to update annotations in the MongoDB by pressing the button "update annotations", otherwise changes in CVAT will not propagate to the rest of the code in any of the repos. Second, to make use of annotations in new images or if the split is changed, contents in the npy-files need to be updated. *This should be made a lot easier for the user by migrating to using text files instead of npy-files (TBD, please supply update to us!)*. 
+When updating annotations or tasks in CVAT it is needed to use the dash-board to update annotations in the MongoDB by pressing the button "update annotations", otherwise changes in CVAT will not propagate to the rest of the code in any of the repos. Second, to make use of annotations in new images or if the split is changed, contents in the npy-files need to be updated. *This should be made a lot easier for the user by migrating to using text files instead of npy-files (**TBD** we are asking the community for this, please supply update to us!)*. 
 
 ### analytics
 The [analytics](https://github.com/edl78/analytics) repo contains a few helper functions we used during the project to study our data and its feature distributions:
@@ -46,8 +46,8 @@ Use the docker-compose files in the cloned code to get images, annotations, auxi
 - First decide where to store the images (will use 2 times 670GB for 4K images, 2 times 115GB for full-HD images), edit the `.env`-file and set the variable `WEED_DATA_PATH` to where **on the host machine** you decided to store the images. This will be mapped to `/weed_data` inside the container. Images will be downloaded and exracted into a sub-directory called `fielddata`.
 - Next, the `artefacts` folder needs to be downloaded. It will be stored in the sub-directory `fielddata/artefacts` in the folder defined by `WEED_DATA_PATH`, as set in the `.env`-file. The artefacts folder contains a pretrained resnet18 Pytorch model and json files to import to MongoDB for the short path to training. Json files are meta.json, tasks.json and annotation_data.json. Pickle files for fast track to training are also supplied.
 - There is also some optional data with partial segmentation masks for a few hundred images, see repo for details.
-- Calibration data **TBD**
-- tSNE plots **TBD**
+- Calibration data: Checker board images for each camera can be found in the directory `fielddata/tractor-calibration` for you to use. Images in the dataset and used to train the pre-trained model have not been rectified. **TBD**
+- tSNE plots: Pre-generated tSNE plots for the dataset can be found in folder `fielddata/tractor-tSNE` after you have downloaded the dataset.
 
 
 ### Building all Docker images
@@ -223,7 +223,9 @@ where `...` means skip to next relevant section. In this example `/fs/cvatdata` 
 ```
 cd /your/folder/
 mkdir data db keys logs models
-chown <username>:<usergroup> data db keys logs models
+chown 1000:1000 data db keys logs models
+chmod 777 data db keys logs models
+chmod 777 .
 ```
 for the user which will start docker.
 
