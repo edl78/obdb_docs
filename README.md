@@ -231,3 +231,6 @@ for the user which will start docker.
 
 - Keep in mind that if you ave already used a newer CVAT version this might be needed: `docker-compose down -v` in the cvat folder. **It will remove the volumes associated with cvat, so beware.** Make sure to back up your annotations before.
 
+# Academic citation
+
+Please see the [main webpage](https://openweeds.linkoping-ri.se/howtocite.html) for information on how to cite.
